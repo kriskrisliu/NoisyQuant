@@ -7,6 +7,13 @@ An official implement of CVPR 2023 paper - NoisyQuant: Noisy Bias-Enhanced Post-
 * [X] simple implementation
 * [ ] full implementation
 
+## Requirement
+
+```bash
+pip install timm
+# We use torch==2.0.1+cu117 and timm==0.9.8
+```
+
 ## Best practice
 
 Let's check it out how NoisyQuant works.
@@ -34,8 +41,6 @@ which gives you results like:
     "interpolation": "bicubic"
 }
 ```
-
-
 
 2. Let's see what happens (generally accuracy degradation) if we apply a vanillia quantization method:
 
