@@ -5,7 +5,7 @@ An official implement of CVPR 2023 paper - NoisyQuant: Noisy Bias-Enhanced Post-
 ## Todo list
 
 * [X] simple implementation
-* [ ] full implementation
+* [X] full implementation
 
 ## Requirement
 
@@ -13,6 +13,10 @@ An official implement of CVPR 2023 paper - NoisyQuant: Noisy Bias-Enhanced Post-
 pip install timm
 # We use torch==2.0.1+cu117 and timm==0.9.8
 ```
+
+## How to run
+
+Please have a look at [run.sh](https://github.com/kriskrisliu/NoisyQuant/blob/main/run.sh)
 
 ## Best practice
 
@@ -68,10 +72,10 @@ which gives you 64.6, a big drop from 85.1:
 3. with NoisyQuant:
 
 ```bash
-python validate.py /data/dataset/imagenet/val/ --model vit_base_patch16_224 --pretrained --quant --with_noisy_quant
+python validate.py /data/dataset/imagenet/val/ --model $MODEL --pretrained --quant --with_noisy_quant --calib_root /data/dataset/imagenet/train --calib_num 256 --percentile --search_mean --search_noisy
 ```
 
-which gives you 72.45. Noted that we do not use any other tricks, such as clipping, zero-shifting, bias-correction ...
+which gives you 83.28.
 
 We just add some `random noise`.
 
@@ -79,10 +83,10 @@ We just add some `random noise`.
 # NoisyQuant
 {
     "model": "vit_base_patch16_224",
-    "top1": 72.45,
-    "top1_err": 27.55,
-    "top5": 90.998,
-    "top5_err": 9.002,
+    "top1": 83.28,
+    "top1_err": 16.72,
+    "top5": 96.64,
+    "top5_err": 3.36,
     "param_count": 86.57,
     "img_size": 224,
     "crop_pct": 0.9,
