@@ -161,7 +161,7 @@ parser.add_argument('--calib_num', type=int, help="number of calibration images"
 parser.add_argument('--percentile', action='store_true')
 parser.add_argument('--search_mean', action='store_true')
 parser.add_argument('--search_noisy', action='store_true')
-
+parser.add_argument('--bitwidth', type=int, default=6, help="bit width")
 
 
 def validate(args):
@@ -218,7 +218,7 @@ def validate(args):
     )
     
     if args.quant:
-        model = fast_quant(model, bit=6, with_noisy_quant=args.with_noisy_quant, 
+        model = fast_quant(model, bit=args.bitwidth, with_noisy_quant=args.with_noisy_quant, 
                            percentile=args.percentile,
                            search_noisy=args.search_noisy, search_mean=args.search_mean)
     

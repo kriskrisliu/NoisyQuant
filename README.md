@@ -46,7 +46,7 @@ which gives you results like:
 }
 ```
 
-2. Let's see what happens (generally accuracy degradation) if we apply a vanillia quantization method:
+2. Let's see what happens (generally accuracy degradation) if we apply a vanillia 6-bit quantization method:
 
 ```bash
 python validate.py /data/dataset/imagenet/val/ --model vit_base_patch16_224 --pretrained --quant
@@ -69,10 +69,10 @@ which gives you 64.6, a big drop from 85.1:
 }
 ```
 
-3. with NoisyQuant:
+3. with 6-bit NoisyQuant:
 
 ```bash
-python validate.py /data/dataset/imagenet/val/ --model $MODEL --pretrained --quant --with_noisy_quant --calib_root /data/dataset/imagenet/train --calib_num 256 --percentile --search_mean --search_noisy
+python validate.py /data/dataset/imagenet/val/ --model $MODEL --pretrained --quant --with_noisy_quant --calib_root /data/dataset/imagenet/train --calib_num 256 --percentile --search_mean --search_noisy --bitwidth 6
 ```
 
 which gives you 83.28.

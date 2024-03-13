@@ -162,5 +162,4 @@ def fast_quant(model, bit=6, with_noisy_quant=False, percentile=False, search_me
                 module.noisy_search = False
             module.forward = MethodType(quant_forward, module)
 
-            # import ipdb;ipdb.set_trace()
     return model
