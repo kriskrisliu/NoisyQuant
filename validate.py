@@ -150,8 +150,18 @@ parser.add_argument('--valid-labels', default='', type=str, metavar='FILENAME',
                     help='Valid label indices txt file for validation of partial label space')
 parser.add_argument('--retry', default=False, action='store_true',
                     help='Enable batch size decay & retry for single model validation')
+
+# quantization
 parser.add_argument('--quant', action='store_true')
 parser.add_argument('--with_noisy_quant', action='store_true')
+parser.add_argument('--calib_root', default='', type=str, metavar='CALIBRATION SET',
+                    help='use a mini subset of training set as calibration set')
+parser.add_argument('--calib_num', type=int, help="number of calibration images")
+
+parser.add_argument('--percentile', action='store_true')
+parser.add_argument('--search_mean', action='store_true')
+parser.add_argument('--search_noisy', action='store_true')
+
 
 
 def validate(args):
@@ -208,7 +218,9 @@ def validate(args):
     )
     
     if args.quant:
-        model = fast_quant(model, bit=6, with_noisy_quant=args.with_noisy_quant)
+        model = fast_quant(model, bit=6, with_noisy_quant=args.with_noisy_quant, 
+                           percentile=args.percentile,
+                           search_noisy=args.search_noisy, search_mean=args.search_mean)
     
     if args.num_classes is None:
         assert hasattr(model, 'num_classes'), 'Model must have `num_classes` attr if not set on cmd line/config.'
@@ -266,14 +278,15 @@ def validate(args):
         class_map=args.class_map,
     )
     
-    calib_dataset = create_dataset(
-        root="/data/dataset/imagenet/train",
-        name=args.dataset,
-        split="validation",
-        download=args.dataset_download,
-        load_bytes=args.tf_preprocessing,
-        class_map=args.class_map,
-    )
+    if args.quant and (not os.path.exists(f"./calib_data_{args.calib_num}.pt")):
+        calib_dataset = create_dataset(
+            root=args.calib_root,
+            name=args.dataset,
+            split="validation",
+            download=args.dataset_download,
+            load_bytes=args.tf_preprocessing,
+            class_map=args.class_map,
+        )
 
     if args.valid_labels:
         with open(args.valid_labels, 'r') as f:
@@ -302,21 +315,22 @@ def validate(args):
         device=device,
         tf_preprocessing=args.tf_preprocessing,
     )
-    calib_loader = create_loader(
-        calib_dataset,
-        input_size=data_config['input_size'],
-        batch_size=64,
-        use_prefetcher=args.prefetcher,
-        interpolation=data_config['interpolation'],
-        mean=data_config['mean'],
-        std=data_config['std'],
-        num_workers=args.workers,
-        crop_pct=crop_pct,
-        crop_mode=data_config['crop_mode'],
-        pin_memory=args.pin_mem,
-        device=device,
-        tf_preprocessing=args.tf_preprocessing,
-    )
+    if args.quant and (not os.path.exists(f"./calib_data_{args.calib_num}.pt")):
+        calib_loader = create_loader(
+            calib_dataset,
+            input_size=data_config['input_size'],
+            batch_size=args.calib_num,
+            use_prefetcher=args.prefetcher,
+            interpolation=data_config['interpolation'],
+            mean=data_config['mean'],
+            std=data_config['std'],
+            num_workers=args.workers,
+            crop_pct=crop_pct,
+            crop_mode=data_config['crop_mode'],
+            pin_memory=args.pin_mem,
+            device=device,
+            tf_preprocessing=args.tf_preprocessing,
+        )
 
     batch_time = AverageMeter()
     losses = AverageMeter()
@@ -324,24 +338,33 @@ def validate(args):
     top5 = AverageMeter()
 
     model.eval()
-    # calibration
-    with torch.no_grad():
-        if not os.path.exists("./calib_data.pt"):
-            for batch_idx, (input, target) in enumerate(calib_loader):
-                if args.no_prefetcher:
-                    target = target.to(device)
-                    input = input.to(device)
-                if args.channels_last:
-                    input = input.contiguous(memory_format=torch.channels_last)
-                torch.save(input, "./calib_data.pt")
-                break
-        else:
-            print("Load calibration data from calib_data.pt")
-            input = torch.load("./calib_data.pt")
-        # compute output
-        with amp_autocast():
-            output = model(input)
-        print(f"Calibrate on {len(input)} samples!")
+    # calibrationif not os.path.exists(f"./calib_data_{args.calib_num}.pt"):
+    if args.quant:
+        with torch.no_grad():
+            if not os.path.exists(f"./calib_data_{args.calib_num}.pt"):
+                for batch_idx, (input, target) in enumerate(calib_loader):
+                    if args.no_prefetcher:
+                        target = target.to(device)
+                        input = input.to(device)
+                    if args.channels_last:
+                        input = input.contiguous(memory_format=torch.channels_last)
+                    torch.save(input, f"./calib_data_{args.calib_num}.pt")
+                    break
+            else:
+                print(f"Load calibration data from calib_data_{args.calib_num}.pt")
+                input = torch.load(f"./calib_data_{args.calib_num}.pt")
+            # compute output
+            with amp_autocast():
+                if args.percentile:
+                    # at first, do percentile
+                    print("Begin percentile search!")
+                    output = model(input)
+                    print("Finish percentile search!")
+                if args.search_noisy or args.search_mean:
+                    print("Begin noisy bias search!")
+                    # then, search noisy bias
+                    output = model(input)
+            print(f"Finished Calibration on {len(input)} samples!")
 
     with torch.no_grad():
         # warmup, reduce variability of first batch time, especially for comparing torchscript vs non
