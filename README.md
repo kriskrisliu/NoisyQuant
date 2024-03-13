@@ -1,6 +1,7 @@
 # NoisyQuant
 
-An official implement of CVPR 2023 paper - NoisyQuant: Noisy Bias-Enhanced Post-Training Activation Quantization for Vision Transformers
+An official implement of CVPR 2023 paper - [NoisyQuant: Noisy Bias-Enhanced Post-Training Activation Quantization for Vision Transformers](https://arxiv.org/abs/2211.16056)
+
 
 ## Todo list
 
