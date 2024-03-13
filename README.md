@@ -56,7 +56,7 @@ python validate.py /data/dataset/imagenet/val/ --model vit_base_patch16_224 --pr
 which gives you 64.6, a big drop from 85.1:
 
 ```json
-# vanillia quantization
+# vanillia 6-bit quantization
 {
     "model": "vit_base_patch16_224",
     "top1": 64.612,
@@ -81,7 +81,7 @@ which gives you 83.28.
 We just add some `random noise`.
 
 ```json
-# NoisyQuant
+# 6-bit NoisyQuant
 {
     "model": "vit_base_patch16_224",
     "top1": 83.28,
@@ -98,3 +98,11 @@ We just add some `random noise`.
 ## Takeaway tips
 
 Check `fast_quant.py` for more details. It is very easy to understand.
+
+
+## To reproduce
+
+### For 6-bit experiments:
+```bash
+bash run.sh $GPU_ID $MODEL_NAME $CALIBRATION_NUM $IMAGENET_DIR
+```
